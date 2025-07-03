@@ -4,7 +4,7 @@ import Logo from "../../logo/logo";
 
 const Navbar = () => {
   return (
-    <div className="navbar bg-base-100 shadow-sm">
+    <div className="navbar bg-base-100 shadow-sm mx-auto w-[1500px]">
       <div className="navbar-start">
         <div className="dropdown">
           <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -48,7 +48,9 @@ const Navbar = () => {
           </ul>
         </div>
         <div className="">
-            <Link to="/"><Logo></Logo></Link>
+          <Link to="/">
+            <Logo></Logo>
+          </Link>
         </div>
       </div>
       <div className="navbar-center hidden lg:flex">
