@@ -50,7 +50,7 @@ const servicesData = [
 ];
 const Services = () => {
   return (
-    <section className="py-16 px-4 md:px-10 bg-gray-50 w-[1500px] mx-auto" >
+    <section className="py-16 px-4 md:px-10 bg-gray-50 container w-[1500px] mx-auto" >
       <div className="max-w-7xl mx-auto text-center mb-10">
         <h2 className="text-3xl text-primary font-bold mb-4">Our Services</h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
