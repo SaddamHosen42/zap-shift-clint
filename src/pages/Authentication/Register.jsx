@@ -1,38 +1,56 @@
 import React from "react";
+import { useForm } from "react-hook-form";
 import { Link } from "react-router";
+import useAuth from "../../hooks/useAuth";
 
 const Register = () => {
+  const { register, handleSubmit,formState: { errors }, } = useForm();
+  const {createUser}=useAuth();
+  const onSubmit = (data) => {
+    console.log(data);
+    // Handle registration login here
+       createUser(data.email, data.password)
+            .then(result => {
+                console.log(result.user)
+            })
+            .catch(error => {
+                console.error(error);
+            })
+
+  };
+
   return (
     <div className="flex justify-center  items-center">
       <div className="card bg-base-100 w-sm md:w-[500px]  mx-auto mt-2">
-        <h1 className="text-3xl font-bold ms-5">
-          Create an Account
-        </h1>
+        <h1 className="text-3xl font-bold ms-5">Create an Account</h1>
         <p className="ms-5">Register with Profast</p>
         <div className="card-body">
-          <form className="fieldset">
+          <form className="fieldset" onSubmit={handleSubmit(onSubmit)}>
+            {/* photo url */}
+            <label className="label text-lg">Photo</label>
+            <input
+              type="file"
+              {...register("photo")}
+              accept="image/*"
+              className="file-input file-input-ghost"
+            />
+
             {/* name */}
             <label className="label text-lg">Name</label>
             <input
               type="text"
               className="input w-full"
-              name="name"
+              {...register("name", { required: true })}
               placeholder="Your Name"
+              required
             />
-            {/* photo url */}
-            <label className="label text-lg">Photo</label>
-            <input
-              type="text"
-              className="input w-full"
-              name="photo"
-              placeholder="Photo URL"
-            />
+            
             {/* email */}
             <label className="label text-lg">Email</label>
             <input
               type="email"
               className="input w-full"
-              name="email"
+              {...register("email", { required: true })}
               placeholder="Email"
               required
             />
@@ -43,10 +61,21 @@ const Register = () => {
                 //type="password"
                 // type={showPassword ? "text" : "password"}
                 className="input w-full"
-                name="password"
+                {...register("password", { 
+                    required: true, 
+                    minLength: 6
+                })}
+                type="password"
                 placeholder="Password"
                 required
               />
+              {
+                errors.password && (
+                  <span className="text-red-500 text-sm">
+                    Password must be at least 6 characters long
+                  </span>
+                )
+              }
               {/* <button
                 className="btn btn-xs absolute right-2 top-2 text-lg"
                 onClick={() => setShowPassword(!showPassword)}
