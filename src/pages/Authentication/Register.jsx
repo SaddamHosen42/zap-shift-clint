@@ -1,30 +1,96 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
+import Swal from "sweetalert2";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Register = () => {
-  const { register, handleSubmit,formState: { errors }, } = useForm();
-  const {createUser}=useAuth();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
+  const { createUser, setUser, logInWithGoogle, updateUser } = useAuth();
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
   const onSubmit = (data) => {
     console.log(data);
-    // Handle registration login here
-       createUser(data.email, data.password)
-            .then(result => {
-                console.log(result.user)
-            })
-            .catch(error => {
-                console.error(error);
-            })
+    // Handle registration logic here
 
+    createUser(data.email, data.password)
+      .then((result) => {
+        const user = result.user;
+        console.log(user);
+        updateUser({ displayName: data.name, photoURL: data.photo[0] })
+          .then(() => {
+            setUser({
+              ...user,
+              displayName: data.name,
+              photoURL: data.photo[0],
+            });
+            navigate(location.state || "/");
+            Swal.fire({
+              icon: "success",
+              title: "Your account is created.",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+          })
+          .catch((error) => {
+            console.error("Error updating user profile:", error);
+            setErrorMessage(error.message);
+            Swal.fire({
+              icon: "error",
+              title: "Failed to update profile",
+              text: error.message,
+            });
+            setUser(user);
+          });
+        reset(); // Reset the form after successful registration
+      })
+      .catch((error) => {
+        console.error("Error creating user:", error);
+        setErrorMessage(error.message);
+        // Show an error message to the user
+        Swal.fire({
+          icon: "error",
+          title: "Registration failed",
+          text: error.message,
+        });
+      });
+  };
+  const handleGoogleSignIn = () => {
+    logInWithGoogle()
+      .then((result) => {
+        const user = result.user;
+        navigate(location.state || "/");
+        Swal.fire({
+          icon: "success",
+          title: "Login successful!",
+          text: `Welcome, ${user.displayName}!`,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      })
+      .catch((error) => {
+        setErrorMessage(error.message);
+      });
+    setErrorMessage("");
   };
 
   return (
-    <div className="flex justify-center  items-center">
+    <div className="flex justify-center  items-center mb-12">
       <div className="card bg-base-100 w-sm md:w-[500px]  mx-auto mt-2">
         <h1 className="text-3xl font-bold ms-5">Create an Account</h1>
         <p className="ms-5">Register with Profast</p>
         <div className="card-body">
+             {errorMessage && (
+            <p className="text-red-500 text-center">{errorMessage}</p>
+          )}
           <form className="fieldset" onSubmit={handleSubmit(onSubmit)}>
             {/* photo url */}
             <label className="label text-lg">Photo</label>
@@ -44,7 +110,7 @@ const Register = () => {
               placeholder="Your Name"
               required
             />
-            
+
             {/* email */}
             <label className="label text-lg">Email</label>
             <input
@@ -58,30 +124,27 @@ const Register = () => {
             <label className="label text-lg">Password</label>
             <div className="relative">
               <input
-                //type="password"
-                // type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"}
                 className="input w-full"
-                {...register("password", { 
-                    required: true, 
-                    minLength: 6
+                {...register("password", {
+                  required: true,
+                  minLength: 6,
                 })}
-                type="password"
                 placeholder="Password"
                 required
               />
-              {
-                errors.password && (
-                  <span className="text-red-500 text-sm">
-                    Password must be at least 6 characters long
-                  </span>
-                )
-              }
-              {/* <button
+              {errors.password && (
+                <span className="text-red-500 text-sm">
+                  Password must be at least 6 characters long
+                </span>
+              )}
+              <button
+                type="button"
                 className="btn btn-xs absolute right-2 top-2 text-lg"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button> */}
+              </button>
             </div>
 
             <button
@@ -92,7 +155,7 @@ const Register = () => {
             </button>
             <div className="mt-4 text-center text-lg">
               <p>
-                Allreday have an account?{" "}
+               Already have an account?{" "}
                 <span>
                   <Link to="/login" className="text-amber-400 ">
                     Login
@@ -102,7 +165,7 @@ const Register = () => {
             </div>
             <div className="divider text-lg">OR</div>
             <button
-              // onClick={handleGoogleSignIn}
+               onClick={handleGoogleSignIn}
               className="btn border-amber-500 text-lg bg-amber-400 hover:bg-amber-500"
             >
               <svg

@@ -1,22 +1,80 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
+import Swal from "sweetalert2";
+import useAuth from "../../hooks/useAuth";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Login = () => {
-    const { register, handleSubmit, formState: { errors } } = useForm();
-    const onSubmit = (data) => {
-        console.log(data);
-        // Handle registration logic here
-    }
+  const {
+    register,
+    handleSubmit,
+    reset,
 
+    formState: { errors },
+  } = useForm();
+  const { logIn, logInWithGoogle } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const onSubmit = (data) => {
+    console.log(data);
+    // Handle login logic here
+    logIn(data.email, data.password)
+      .then((result) => {
+        const user = result.user;
+        navigate(location.state || "/");
+        //console.log(user);
+        Swal.fire({
+          // position: "top-end",
+          icon: "success",
+          title: "Login successful!",
+          text: `Welcome, ${user.displayName}!`,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+        reset(); // Reset the form after successful login
+      })
+      .catch(() => {
+        //console.log(error.message);
+        //setErrorMessage(error.message);
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: " Invalid email or password!",
+        });
+      });
+    setErrorMessage("");
+  };
+  const handleGoogleSignIn = () => {
+    logInWithGoogle()
+      .then((result) => {
+        const user = result.user;
+        navigate(location.state || "/");
+        Swal.fire({
+          icon: "success",
+          title: "Login successful!",
+          text: `Welcome, ${user.displayName}!`,
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      })
+      .catch((error) => {
+        setErrorMessage(error.message);
+      });
+    setErrorMessage("");
+  };
   return (
     <div className="flex justify-center  items-center">
       <div className="card bg-base-100 w-sm md:w-[500px]  mx-auto mt-2">
         <h1 className="text-3xl font-bold ms-5">Welcome Back </h1>
         <p className="ms-5">Login with Profast</p>
         <div className="card-body">
+          {errorMessage && (
+            <p className="text-red-500 text-center">{errorMessage}</p>
+          )}
           <form className="fieldset" onSubmit={handleSubmit(onSubmit)}>
-
             {/* email */}
             <label className="label text-lg">Email</label>
             <input
@@ -30,14 +88,12 @@ const Login = () => {
             <label className="label text-lg">Password</label>
             <div className="relative">
               <input
-                //type="password"
-                // type={showPassword ? "text" : "password"}
+                type={showPassword ? "text" : "password"}
                 className="input w-full"
                 {...register("password", {
                   required: true,
                   minLength: 6,
                 })}
-                type="password"
                 placeholder="Password"
                 required
               />
@@ -46,33 +102,34 @@ const Login = () => {
                   Password must be at least 6 characters long
                 </span>
               )}
-              {/* <button
+              <button
+                type="button"
                 className="btn btn-xs absolute right-2 top-2 text-lg"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button> */}
+              </button>
             </div>
 
             <button
               type="submit"
               className="btn bg-amber-400 text-white hover:bg-amber-500 mt-4 text-lg"
             >
-                Login
+              Login
             </button>
             <div className="mt-4 text-center text-lg">
               <p>
                 Don't have an account?{" "}
                 <span>
                   <Link to="/register" className="text-amber-400 ">
-                    Register
+                    Register here
                   </Link>
                 </span>
               </p>
             </div>
             <div className="divider text-lg">OR</div>
             <button
-              // onClick={handleGoogleSignIn}
+              onClick={handleGoogleSignIn}
               className="btn border-amber-500 text-lg bg-amber-400 hover:bg-amber-500"
             >
               <svg
@@ -112,4 +169,3 @@ const Login = () => {
 };
 
 export default Login;
-<h1>this is login pages</h1>;
