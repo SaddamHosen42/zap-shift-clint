@@ -149,7 +149,7 @@ const Register = () => {
 
             <button
               type="submit"
-              className="btn bg-amber-400 text-white hover:bg-amber-500 mt-4 text-lg"
+              className="btn btn-primary text-black mt-4 text-lg"
             >
               Register
             </button>
@@ -157,7 +157,7 @@ const Register = () => {
               <p>
                Already have an account?{" "}
                 <span>
-                  <Link to="/login" className="text-amber-400 ">
+                  <Link to="/login" className="text-primary">
                     Login
                   </Link>
                 </span>
@@ -166,7 +166,7 @@ const Register = () => {
             <div className="divider text-lg">OR</div>
             <button
                onClick={handleGoogleSignIn}
-              className="btn border-amber-500 text-lg bg-amber-400 hover:bg-amber-500"
+              className="btn bg-white text-black border-[#e5e5e5]"
             >
               <svg
                 aria-label="Google logo"

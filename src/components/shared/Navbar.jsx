@@ -121,12 +121,12 @@ const Navbar = () => {
             <span className="text-lg font-semibold me-4">
               {user.displayName}
             </span>
-            <button onClick={handleLogOut} className="btn btn-primary">
+            <button onClick={handleLogOut} className="btn btn-primary text-black">
               Logout
             </button>
           </>
         ) : (
-          <Link to="/login" className="btn btn-primary">
+          <Link to="/login" className="btn btn-primary text-black">
             Login
           </Link>
         )}
