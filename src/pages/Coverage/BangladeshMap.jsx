@@ -3,7 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useState, useEffect } from "react";
 
-const position = [23.685, 90.3563]; // Center of Bangladesh
+const position = [24, 90.3563]; // Center of Bangladesh
 
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -24,7 +24,6 @@ function FlyToDistrict({ coords }) {
 const BangladeshMap = ({ coverageData }) => {
   const [searchText, setSearchText] = useState("");
   const [activeCoords, setActiveCoords] = useState(null);
-  
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -33,10 +32,8 @@ const BangladeshMap = ({ coverageData }) => {
     );
     if (district) {
       setActiveCoords([district.latitude, district.longitude]);
-      
     } else {
       setActiveCoords(null);
-   
     }
   };
 
@@ -62,10 +59,10 @@ const BangladeshMap = ({ coverageData }) => {
       </div>
 
       {/* 🗺️ Map */}
-      <div className="h-[800px] w-full rounded-xl overflow-hidden shadow-lg">
+      <div className="h-[400px] md:h-[900px] w-full rounded-xl overflow-hidden shadow-lg">
         <MapContainer
           center={position}
-          zoom={7.8}
+          zoom={8.1}
           scrollWheelZoom={false}
           className="h-full w-full"
         >
