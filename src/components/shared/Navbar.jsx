@@ -33,6 +33,18 @@ const Navbar = () => {
       >
         Send Parcel
       </NavLink>
+      {
+        user && (
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              isActive ? " underline text-primary" : ""
+            }
+          >
+            Dashboard
+          </NavLink>
+        )
+      }
       <NavLink
         to="/about-us"
         className={({ isActive }) =>
