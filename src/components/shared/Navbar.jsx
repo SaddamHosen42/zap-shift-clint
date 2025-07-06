@@ -26,6 +26,14 @@ const Navbar = () => {
         Coverage
       </NavLink>
       <NavLink
+        to="/sendParcel"
+        className={({ isActive }) =>
+          isActive ? " underline text-primary" : ""
+        }
+      >
+        Send Parcel
+      </NavLink>
+      <NavLink
         to="/about-us"
         className={({ isActive }) =>
           isActive ? " underline text-primary" : ""

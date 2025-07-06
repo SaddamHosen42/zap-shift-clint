@@ -6,39 +6,50 @@ import Login from "../pages/Authentication/Login";
 import Register from "../pages/Authentication/Register";
 import Coverage from "../pages/Coverage/Coverage";
 import AboutUs from "../pages/about-us/AboutUs";
+import PrivateRoute from "../routes/PrivateRoute";
+import SendParcel from "../pages/SendParcel/SendParcel";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component:RootLayout,
-    children:[
-        {
-            index: true,
-            Component:Home
-        },
-        {
-          path:"coverage",
-          loader:()=> fetch('./warehouses.json'),
-          Component:Coverage
-        },
-        {
-          path:"about-us",
-          Component:AboutUs
-        }
-    ]
+    element: <RootLayout />,
+    children: [
+      {
+        index: true,
+        element: <Home />,
+      },
+      {
+        path: "coverage",
+        loader: () => fetch("./warehouses.json"),
+        element: <Coverage />,
+      },
+      {
+        path: "about-us",
+        element: <AboutUs />,
+      },
+      {
+        path: "sendParcel",
+        loader: () => fetch("./warehouses.json"),
+        element: (
+          <PrivateRoute>
+            <SendParcel />
+          </PrivateRoute>
+        ),
+      },
+    ],
   },
   {
-    path:"/",
-    Component: AuthLayout,
-    children:[
-        {
-          path: "login",
-          Component:Login
-        },
-        {
-          path: "register",
-          Component: Register
-        },
-    ]
+    path: "/",
+    element: <AuthLayout />,
+    children: [
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "register",
+        element: <Register />,
+      },
+    ],
   },
 ]);
