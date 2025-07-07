@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router";
 import Logo from "../logo/logo";
+import { FaBoxOpen, FaHome } from "react-icons/fa";
 
 const DashboardLayout = () => {
   return (
@@ -47,17 +48,21 @@ const DashboardLayout = () => {
           {/* Sidebar content here */}
           <Logo></Logo>
           <li>
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                isActive ? " underline text-primary" : ""
-              }
-            >
+            <NavLink to="/dashboard">
+              <FaHome className="inline-block mr-2" />
               Home
             </NavLink>
           </li>
           <li>
-            <NavLink to="/dashboard/myParcels">My Parcels</NavLink>
+            <NavLink
+              to="/dashboard/myParcels"
+              className={({ isActive }) =>
+                isActive ? " underline " : ""
+              }
+            >
+              <FaBoxOpen className="inline-block mr-2" />
+              My Parcels
+            </NavLink>
           </li>
         </ul>
       </div>

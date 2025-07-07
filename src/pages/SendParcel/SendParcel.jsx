@@ -19,6 +19,7 @@ const SendParcel = () => {
     handleSubmit,
     watch,
     formState: { errors },
+    reset,
   } = useForm();
   const { user } = useAuth();
   const axiosSecure = useAxiosSecure();
@@ -35,10 +36,16 @@ const SendParcel = () => {
 
   const onSubmit = (data) => {
     const weight = parseFloat(data.weight) || 0;
+    // console.log(weight);
+
     const isSameDistrict = data.sender_center === data.receiver_center;
 
-    const { baseCost, extraCost, totalCost, breakdown } = calculateDeliveryCost( data.type, weight, isSameDistrict);
-    
+    const { baseCost, extraCost, totalCost, breakdown } = calculateDeliveryCost(
+      data.type,
+      weight,
+      isSameDistrict
+    );
+
     Swal.fire({
       title: "Delivery Cost Breakdown",
       icon: "info",
@@ -93,6 +100,13 @@ const SendParcel = () => {
               icon: "success",
               timer: 1500,
               showConfirmButton: false,
+            });
+            reset(); // Reset form after successful submission
+          } else {
+            Swal.fire({
+              title: "Error!",
+              text: "Failed to send parcel. Please try again.",
+              icon: "error",
             });
           }
         });
@@ -163,7 +177,6 @@ const SendParcel = () => {
             <label className="label font-medium">Weight (kg)</label>
             <input
               type="number"
-              step="0.1"
               {...register("weight")}
               disabled={parcelType !== "non-document"}
               placeholder="Enter weight (only for non-documents)"
