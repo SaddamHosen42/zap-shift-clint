@@ -1,6 +1,13 @@
 import React from 'react';
+import CountUp from 'react-countup';
+import { useInView } from 'react-intersection-observer';
 
 const AboutUs = () => {
+    const { ref: statsRef, inView } = useInView({
+        threshold: 0.3,
+        triggerOnce: true,
+    });
+
     const teamMembers = [
         {
             name: "MD. Rahman Khan",
@@ -23,10 +30,10 @@ const AboutUs = () => {
     ];
 
     const stats = [
-        { number: "50,000+", label: "Successful Deliveries" },
-        { number: "1,000+", label: "Happy Customers" },
-        { number: "8", label: "Cities Covered" },
-        { number: "99.5%", label: "On-Time Delivery" }
+        { number: 50000, suffix: "+", label: "Successful Deliveries", duration: 3 },
+        { number: 1000, suffix: "+", label: "Happy Customers", duration: 2.5 },
+        { number: 8, suffix: "", label: "Cities Covered", duration: 2 },
+        { number: 99.5, suffix: "%", label: "On-Time Delivery", duration: 3.5, decimals: 1 }
     ];
 
     const values = [
@@ -75,13 +82,28 @@ const AboutUs = () => {
             </div>
 
             {/* Stats Section */}
-            <div className="py-16 bg-secondary text-white">
+            <div ref={statsRef} className="py-16 bg-secondary text-white">
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         {stats.map((stat, index) => (
-                            <div key={index} className="text-center">
-                                <div className="text-4xl font-bold text-primary mb-2">{stat.number}</div>
-                                <div className="text-lg opacity-90">{stat.label}</div>
+                            <div key={index} className="text-center group">
+                                <div className="text-4xl font-bold text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
+                                    {inView ? (
+                                        <CountUp
+                                            start={0}
+                                            end={stat.number}
+                                            duration={stat.duration}
+                                            decimals={stat.decimals || 0}
+                                            suffix={stat.suffix}
+                                            separator=","
+                                        />
+                                    ) : (
+                                        `0${stat.suffix}`
+                                    )}
+                                </div>
+                                <div className="text-lg opacity-90 group-hover:text-primary transition-colors duration-300">
+                                    {stat.label}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -108,7 +130,17 @@ const AboutUs = () => {
                                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
                                     <span className="text-secondary text-xl font-bold">✓</span>
                                 </div>
-                                <span className="text-lg font-semibold text-secondary">Trusted by 1000+ customers</span>
+                                <span className="text-lg font-semibold text-secondary">
+                                    Trusted by{" "}
+                                    <CountUp
+                                        start={0}
+                                        end={1000}
+                                        duration={2}
+                                        suffix="+"
+                                        separator=","
+                                    />
+                                    {" "}customers
+                                </span>
                             </div>
                         </div>
                         <div className="relative">

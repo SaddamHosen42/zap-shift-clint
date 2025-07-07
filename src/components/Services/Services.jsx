@@ -50,22 +50,22 @@ const servicesData = [
 ];
 const Services = () => {
   return (
-    <section className="py-24 px-6 bg-gradient-to-br from-gray-50 via-white to-gray-100 relative overflow-hidden">
+    <section className="py-24 px-6 bg-secondary relative overflow-hidden">
       {/* Background Decorative Elements */}
       <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-secondary/5 rounded-full blur-3xl"></div>
       
-      <div className="container mx-auto max-w-7xl relative z-10">
+      <div className="container mx-auto max-w-7xl relative z-10 ">
         {/* Enhanced Header */}
         <div className="text-center mb-20">
           <div className="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-semibold text-sm mb-4">
             ⚡ Our Services
           </div>
-          <h2 className="text-5xl font-bold text-secondary mb-6 leading-tight">
+          <h2 className="text-5xl font-bold text-white mb-6 leading-tight">
             Delivery Solutions for <br/>
             <span className="text-primary">Every Need</span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg text-gray-200 max-w-3xl mx-auto leading-relaxed">
             Experience fast, reliable parcel delivery with real-time tracking and zero hassle. 
             From personal packages to business shipments — we deliver excellence, every time.
           </p>
