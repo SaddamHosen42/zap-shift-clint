@@ -1,169 +1,170 @@
 import React, { useState } from 'react';
-
-import { useForm, Controller } from 'react-hook-form';
+import { CardElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { useQuery } from '@tanstack/react-query';
+import Swal from 'sweetalert2';
+import useAuth from '../../hooks/useAuth';
+import useAxiosSecure from '../../hooks/useAxiosSecure';
+import { useNavigate, useParams } from 'react-router';
 
 const PaymentForm = () => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const { parcelId } = useParams();
+    const { user } = useAuth();
+    const axiosSecure = useAxiosSecure();
+    const navigate = useNavigate();
+
+    const [error, setError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    
-    const {
-        control,
-        handleSubmit,
-        watch,
-        formState: { errors }
-    } = useForm({
-        defaultValues: {
-            cardNumber: '',
-            expiryDate: '',
-            cvv: '',
-            cardHolderName: '',
-            billingAddress: '',
-            city: '',
-            zipCode: '',
-            paymentMethod: 'card',
-            mobileNumber: ''
-        },
-        mode: 'onChange'
+
+    const { isPending, data: parcelInfo = {} } = useQuery({
+        queryKey: ['parcels', parcelId],
+        queryFn: async () => {
+            const res = await axiosSecure.get(`/parcels/${parcelId}`);
+            return res.data;
+        }
     });
-    
-    const paymentMethod = watch('paymentMethod');
 
-    // Format card number with spaces
-    const formatCardNumber = (value) => {
-        const cleanValue = value.replace(/\s/g, '');
-        const formattedValue = cleanValue.replace(/(.{4})/g, '$1 ').trim();
-        return formattedValue.length > 19 ? formattedValue.substring(0, 19) : formattedValue;
-    };
+    if (isPending) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-200">
+                    <div className="flex items-center justify-center space-x-3">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-lg font-medium text-gray-600">Loading payment details...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-    // Format expiry date MM/YY
-    const formatExpiryDate = (value) => {
-        const cleanValue = value.replace(/\D/g, '');
-        const formattedValue = cleanValue.replace(/(\d{2})(\d)/, '$1/$2');
-        return formattedValue.length > 5 ? formattedValue.substring(0, 5) : formattedValue;
-    };
+    const amount = parcelInfo.cost;
+    const amountInCents = amount * 100;
 
-    // Format CVV (numbers only, max 3 digits)
-    const formatCVV = (value) => {
-        const cleanValue = value.replace(/\D/g, '');
-        return cleanValue.length > 3 ? cleanValue.substring(0, 3) : cleanValue;
-    };
-
-    // Format mobile number
-    const formatMobileNumber = (value) => {
-        const cleanValue = value.replace(/\D/g, '');
-        return cleanValue.length > 11 ? cleanValue.substring(0, 11) : cleanValue;
-    };
-
-    const onSubmit = async (data) => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         setIsProcessing(true);
-        
+        setError('');
+
+        if (!stripe || !elements) {
+            setError('Stripe has not loaded yet. Please try again.');
+            setIsProcessing(false);
+            return;
+        }
+
+        const card = elements.getElement(CardElement);
+
+        if (!card) {
+            setError('Card element not found.');
+            setIsProcessing(false);
+            return;
+        }
+
         try {
-            // Simulate payment processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Here you would integrate with actual payment gateway
-            console.log('Payment data:', {
-                ...data,
-                timestamp: new Date().toISOString()
+            // Step 1: Validate the card
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card,
+                billing_details: {
+                    name: user.displayName,
+                    email: user.email
+                }
             });
-            
-            // Show success message
-            alert('Payment processed successfully!');
-            
-        } catch (error) {
-            console.error('Payment failed:', error);
-            alert('Payment failed. Please try again.');
+
+            if (error) {
+                setError(error.message);
+                setIsProcessing(false);
+                return;
+            }
+
+            console.log('Payment method created:', paymentMethod);
+
+            // Step 2: Create payment intent
+            const res = await axiosSecure.post('/create-payment-intent', {
+                amountInCents,
+                parcelId
+            });
+
+            const clientSecret = res.data.clientSecret;
+
+            //Step 3: Confirm payment
+            const result = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: {
+                    card: elements.getElement(CardElement),
+                    billing_details: {
+                        name: user.displayName,
+                        email: user.email
+                    },
+                },
+            });
+
+            if (result.error) {
+                setError(result.error.message);
+            } else {
+                if (result.paymentIntent.status === 'succeeded') {
+                    const transactionId = result.paymentIntent.id;
+                    console.log('Payment successful:', transactionId);
+                    
+                    // Step 4: Save payment data
+                    const paymentData = {
+                        parcelId,
+                        email: user.email,
+                        amount,
+                        transactionId: transactionId,
+                        paymentMethod: result.paymentIntent.payment_method_types
+                    };
+
+                    const paymentRes = await axiosSecure.post('/payments', paymentData);
+                    console.log('Payment saved:', paymentRes.data);
+                    
+                    if (paymentRes.data.paymentId) {
+                        // Show success message
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Payment Successful!',
+                            html: `
+                                <div class="text-center">
+                                    <p class="text-lg mb-4">Your payment has been processed successfully!</p>
+                                    <div class="bg-gray-100 p-4 rounded-lg">
+                                        <p class="text-sm text-gray-600 mb-2">Transaction ID:</p>
+                                        <code class="text-sm font-mono bg-white px-3 py-2 rounded border">${transactionId}</code>
+                                    </div>
+                                </div>
+                            `,
+                            confirmButtonText: 'Go to My Parcels',
+                            confirmButtonColor: '#10B981'
+                        });
+
+                        // Redirect to My Parcels
+                        navigate('/dashboard/myParcels');
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Payment error:', err);
+            setError('An unexpected error occurred. Please try again.');
         } finally {
             setIsProcessing(false);
         }
     };
 
-    const getCardType = (number) => {
-        const num = number.replace(/\s/g, '');
-        if (num.startsWith('4')) return 'visa';
-        if (num.startsWith('5')) return 'mastercard';
-        if (num.startsWith('3')) return 'amex';
-        return 'card';
-    };
-
-    // Validation rules
-    const validationRules = {
-        cardHolderName: {
-            required: 'Card holder name is required',
-            minLength: {
-                value: 2,
-                message: 'Name must be at least 2 characters'
-            }
+    // Stripe Card Element styling
+    const cardElementOptions = {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                    color: '#aab7c4',
+                },
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                fontSmoothing: 'antialiased',
+            },
+            invalid: {
+                color: '#9e2146',
+            },
         },
-        cardNumber: {
-            required: 'Card number is required',
-            validate: (value) => {
-                const cleanNumber = value.replace(/\s/g, '');
-                if (cleanNumber.length < 16) {
-                    return 'Card number must be 16 digits';
-                }
-                return true;
-            }
-        },
-        expiryDate: {
-            required: 'Expiry date is required',
-            validate: (value) => {
-                if (value.length < 5) {
-                    return 'Please enter a valid expiry date';
-                }
-                const [month, year] = value.split('/');
-                const currentYear = new Date().getFullYear() % 100;
-                const currentMonth = new Date().getMonth() + 1;
-                
-                if (parseInt(month) < 1 || parseInt(month) > 12) {
-                    return 'Invalid month';
-                }
-                
-                if (parseInt(year) < currentYear || 
-                    (parseInt(year) === currentYear && parseInt(month) < currentMonth)) {
-                    return 'Card has expired';
-                }
-                
-                return true;
-            }
-        },
-        cvv: {
-            required: 'CVV is required',
-            minLength: {
-                value: 3,
-                message: 'CVV must be 3 digits'
-            }
-        },
-        billingAddress: {
-            required: 'Billing address is required',
-            minLength: {
-                value: 5,
-                message: 'Address must be at least 5 characters'
-            }
-        },
-        city: {
-            required: 'City is required',
-            minLength: {
-                value: 2,
-                message: 'City must be at least 2 characters'
-            }
-        },
-        zipCode: {
-            required: 'ZIP code is required',
-            pattern: {
-                value: /^\d{4,6}$/,
-                message: 'ZIP code must be 4-6 digits'
-            }
-        },
-        mobileNumber: {
-            validate: (value) => {
-                if (paymentMethod === 'bkash' || paymentMethod === 'nagad') {
-                    if (!value) return 'Mobile number is required';
-                    if (value.length < 11) return 'Mobile number must be 11 digits';
-                    if (!value.startsWith('01')) return 'Mobile number must start with 01';
-                }
-                return true;
-            }
-        }
+        hidePostalCode: true,
     };
 
     return (
@@ -171,8 +172,8 @@ const PaymentForm = () => {
             <div className="container mx-auto max-w-4xl">
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold text-secondary mb-4">Payment Information</h1>
-                    <p className="text-lg text-gray-600">Secure payment processing for your parcel delivery</p>
+                    <h1 className="text-4xl font-bold text-secondary mb-4">Secure Payment</h1>
+                    <p className="text-lg text-gray-600">Complete your parcel delivery payment safely with Stripe</p>
                 </div>
 
                 <div className="max-w-2xl mx-auto">
@@ -185,322 +186,64 @@ const PaymentForm = () => {
                             Payment Details
                         </h2>
 
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                            {/* Payment Method Selection */}
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Customer Information */}
+                            <div className="bg-gray-50 p-4 rounded-xl">
+                                <h3 className="text-lg font-semibold text-gray-700 mb-3">Customer Information</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                                            Name
+                                        </label>
+                                        <div className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 font-medium">
+                                            {user.displayName || 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                                            Email
+                                        </label>
+                                        <div className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-800 font-medium">
+                                            {user.email || 'N/A'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card Details */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-3">
-                                    Payment Method
+                                    Card Information
                                 </label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <Controller
-                                        name="paymentMethod"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <>
-                                                <label className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all duration-300 ${
-                                                    field.value === 'card' 
-                                                    ? 'border-primary bg-primary/10' 
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                }`}>
-                                                    <input
-                                                        type="radio"
-                                                        value="card"
-                                                        checked={field.value === 'card'}
-                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                        className="hidden"
-                                                    />
-                                                    <div className="text-2xl mb-2">💳</div>
-                                                    <div className="text-sm font-medium">Card</div>
-                                                </label>
-                                                
-                                                <label className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all duration-300 ${
-                                                    field.value === 'bkash' 
-                                                    ? 'border-primary bg-primary/10' 
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                }`}>
-                                                    <input
-                                                        type="radio"
-                                                        value="bkash"
-                                                        checked={field.value === 'bkash'}
-                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                        className="hidden"
-                                                    />
-                                                    <div className="text-2xl mb-2">📱</div>
-                                                    <div className="text-sm font-medium">bKash</div>
-                                                </label>
-
-                                                <label className={`cursor-pointer border-2 rounded-xl p-4 text-center transition-all duration-300 ${
-                                                    field.value === 'nagad' 
-                                                    ? 'border-primary bg-primary/10' 
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                }`}>
-                                                    <input
-                                                        type="radio"
-                                                        value="nagad"
-                                                        checked={field.value === 'nagad'}
-                                                        onChange={(e) => field.onChange(e.target.value)}
-                                                        className="hidden"
-                                                    />
-                                                    <div className="text-2xl mb-2">💰</div>
-                                                    <div className="text-sm font-medium">Nagad</div>
-                                                </label>
-                                            </>
-                                        )}
-                                    />
+                                <div className="p-4 border-2 border-gray-200 rounded-xl focus-within:border-primary transition-all duration-300 bg-white">
+                                    <CardElement options={cardElementOptions} />
                                 </div>
+                                <p className="text-xs text-gray-500 mt-2 flex items-center">
+                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Your payment information is encrypted and secure
+                                </p>
                             </div>
 
-                            {/* Card Details - Only show if card is selected */}
-                            {paymentMethod === 'card' && (
-                                <>
-                                    {/* Card Holder Name */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Card Holder Name
-                                        </label>
-                                        <Controller
-                                            name="cardHolderName"
-                                            control={control}
-                                            rules={validationRules.cardHolderName}
-                                            render={({ field }) => (
-                                                <input
-                                                    {...field}
-                                                    type="text"
-                                                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                        errors.cardHolderName 
-                                                        ? 'border-red-300 focus:border-red-500' 
-                                                        : 'border-gray-200 focus:border-primary'
-                                                    }`}
-                                                    placeholder="John Doe"
-                                                />
-                                            )}
-                                        />
-                                        {errors.cardHolderName && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.cardHolderName.message}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Card Number */}
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            Card Number
-                                        </label>
-                                        <div className="relative">
-                                            <Controller
-                                                name="cardNumber"
-                                                control={control}
-                                                rules={validationRules.cardNumber}
-                                                render={({ field }) => (
-                                                    <input
-                                                        {...field}
-                                                        type="text"
-                                                        onChange={(e) => {
-                                                            const formatted = formatCardNumber(e.target.value);
-                                                            field.onChange(formatted);
-                                                        }}
-                                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                            errors.cardNumber 
-                                                            ? 'border-red-300 focus:border-red-500' 
-                                                            : 'border-gray-200 focus:border-primary'
-                                                        }`}
-                                                        placeholder="1234 5678 9012 3456"
-                                                    />
-                                                )}
-                                            />
-                                            <div className="absolute right-3 top-3 text-2xl">
-                                                {getCardType(watch('cardNumber')) === 'visa' && '💙'}
-                                                {getCardType(watch('cardNumber')) === 'mastercard' && '🔴'}
-                                                {getCardType(watch('cardNumber')) === 'amex' && '💚'}
-                                                {getCardType(watch('cardNumber')) === 'card' && '💳'}
-                                            </div>
-                                        </div>
-                                        {errors.cardNumber && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.cardNumber.message}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Expiry Date and CVV */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                Expiry Date
-                                            </label>
-                                            <Controller
-                                                name="expiryDate"
-                                                control={control}
-                                                rules={validationRules.expiryDate}
-                                                render={({ field }) => (
-                                                    <input
-                                                        {...field}
-                                                        type="text"
-                                                        onChange={(e) => {
-                                                            const formatted = formatExpiryDate(e.target.value);
-                                                            field.onChange(formatted);
-                                                        }}
-                                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                            errors.expiryDate 
-                                                            ? 'border-red-300 focus:border-red-500' 
-                                                            : 'border-gray-200 focus:border-primary'
-                                                        }`}
-                                                        placeholder="MM/YY"
-                                                    />
-                                                )}
-                                            />
-                                            {errors.expiryDate && (
-                                                <p className="text-red-500 text-sm mt-1">{errors.expiryDate.message}</p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                                CVV
-                                            </label>
-                                            <Controller
-                                                name="cvv"
-                                                control={control}
-                                                rules={validationRules.cvv}
-                                                render={({ field }) => (
-                                                    <input
-                                                        {...field}
-                                                        type="text"
-                                                        onChange={(e) => {
-                                                            const formatted = formatCVV(e.target.value);
-                                                            field.onChange(formatted);
-                                                        }}
-                                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                            errors.cvv 
-                                                            ? 'border-red-300 focus:border-red-500' 
-                                                            : 'border-gray-200 focus:border-primary'
-                                                        }`}
-                                                        placeholder="123"
-                                                    />
-                                                )}
-                                            />
-                                            {errors.cvv && (
-                                                <p className="text-red-500 text-sm mt-1">{errors.cvv.message}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Mobile Banking Details */}
-                            {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Mobile Number
-                                    </label>
-                                    <Controller
-                                        name="mobileNumber"
-                                        control={control}
-                                        rules={validationRules.mobileNumber}
-                                        render={({ field }) => (
-                                            <input
-                                                {...field}
-                                                type="tel"
-                                                onChange={(e) => {
-                                                    const formatted = formatMobileNumber(e.target.value);
-                                                    field.onChange(formatted);
-                                                }}
-                                                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                    errors.mobileNumber 
-                                                    ? 'border-red-300 focus:border-red-500' 
-                                                    : 'border-gray-200 focus:border-primary'
-                                                }`}
-                                                placeholder="01XXXXXXXXX"
-                                            />
-                                        )}
-                                    />
-                                    {errors.mobileNumber && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.mobileNumber.message}</p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Billing Address */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-700 mb-4">Billing Address</h3>
-                                
-                                <div className="space-y-4">
-                                    <div>
-                                        <Controller
-                                            name="billingAddress"
-                                            control={control}
-                                            rules={validationRules.billingAddress}
-                                            render={({ field }) => (
-                                                <input
-                                                    {...field}
-                                                    type="text"
-                                                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                        errors.billingAddress 
-                                                        ? 'border-red-300 focus:border-red-500' 
-                                                        : 'border-gray-200 focus:border-primary'
-                                                    }`}
-                                                    placeholder="Street Address"
-                                                />
-                                            )}
-                                        />
-                                        {errors.billingAddress && (
-                                            <p className="text-red-500 text-sm mt-1">{errors.billingAddress.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Controller
-                                                name="city"
-                                                control={control}
-                                                rules={validationRules.city}
-                                                render={({ field }) => (
-                                                    <input
-                                                        {...field}
-                                                        type="text"
-                                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                            errors.city 
-                                                            ? 'border-red-300 focus:border-red-500' 
-                                                            : 'border-gray-200 focus:border-primary'
-                                                        }`}
-                                                        placeholder="City"
-                                                    />
-                                                )}
-                                            />
-                                            {errors.city && (
-                                                <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <Controller
-                                                name="zipCode"
-                                                control={control}
-                                                rules={validationRules.zipCode}
-                                                render={({ field }) => (
-                                                    <input
-                                                        {...field}
-                                                        type="text"
-                                                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-300 ${
-                                                            errors.zipCode 
-                                                            ? 'border-red-300 focus:border-red-500' 
-                                                            : 'border-gray-200 focus:border-primary'
-                                                        }`}
-                                                        placeholder="ZIP Code"
-                                                    />
-                                                )}
-                                            />
-                                            {errors.zipCode && (
-                                                <p className="text-red-500 text-sm mt-1">{errors.zipCode.message}</p>
-                                            )}
-                                        </div>
+                            {/* Error Message */}
+                            {error && (
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                    <div className="flex items-center">
+                                        <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                        <p className="text-red-700 text-sm font-medium">{error}</p>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                disabled={isProcessing}
+                                disabled={!stripe || isProcessing}
                                 className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-                                    isProcessing
+                                    !stripe || isProcessing
                                     ? 'bg-gray-400 cursor-not-allowed'
                                     : 'bg-primary hover:bg-primary/90 hover:scale-105'
                                 } text-black shadow-lg`}
@@ -508,12 +251,22 @@ const PaymentForm = () => {
                                 {isProcessing ? (
                                     <span className="flex items-center justify-center">
                                         <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin mr-2"></div>
-                                        Processing...
+                                        Processing Payment...
                                     </span>
                                 ) : (
-                                    'Complete Payment'
+                                    `Pay $${amount}`
                                 )}
                             </button>
+
+                            {/* Payment Methods Accepted */}
+                            <div className="flex items-center justify-center space-x-4 pt-4">
+                                <span className="text-sm text-gray-500">We accept:</span>
+                                <div className="flex space-x-2">
+                                    <div className="bg-blue-100 px-2 py-1 rounded text-xs font-medium text-blue-700">VISA</div>
+                                    <div className="bg-red-100 px-2 py-1 rounded text-xs font-medium text-red-700">Mastercard</div>
+                                    <div className="bg-green-100 px-2 py-1 rounded text-xs font-medium text-green-700">American Express</div>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
