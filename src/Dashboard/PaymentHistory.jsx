@@ -92,7 +92,7 @@ const PaymentHistory = () => {
                                     {/* Right Section - Amount & Transaction */}
                                     <div className="lg:text-right">
                                         <div className="text-3xl font-bold text-primary mb-2">
-                                            ${payment.amount}
+                                            {payment.amount} Tk
                                         </div>
                                         <div className="bg-gray-50 p-3 rounded-xl">
                                             <span className="text-xs text-gray-500 block mb-1">Transaction ID</span>
@@ -162,7 +162,7 @@ const PaymentHistory = () => {
                                 <div>
                                     <p className="text-gray-500 text-sm">Total Amount</p>
                                     <p className="text-2xl font-bold text-green-600">
-                                        ${payments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
+                                        {payments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)} Tk
                                     </p>
                                 </div>
                                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
