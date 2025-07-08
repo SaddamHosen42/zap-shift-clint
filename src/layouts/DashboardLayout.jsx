@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router";
 import Logo from "../logo/logo";
-import { FaBoxOpen, FaHome } from "react-icons/fa";
+import { FaBoxOpen, FaHome, FaMoneyCheckAlt } from "react-icons/fa";
 
 const DashboardLayout = () => {
   return (
@@ -62,6 +62,17 @@ const DashboardLayout = () => {
             >
               <FaBoxOpen className="inline-block mr-2" />
               My Parcels
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/dashboard/paymentHistory"
+              className={({ isActive }) =>
+                isActive ? " underline " : ""
+              }
+            >
+               <FaMoneyCheckAlt className="inline-block mr-2" />
+              Payment History
             </NavLink>
           </li>
         </ul>

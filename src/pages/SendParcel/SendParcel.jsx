@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import Swal from "sweetalert2";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 
 import useAxiosSecure from "../../hooks/useAxiosSecure";
 import useAuth from "../../hooks/useAuth";
@@ -24,6 +24,7 @@ const SendParcel = () => {
   const { user } = useAuth();
   const axiosSecure = useAxiosSecure();
   const serviceCenters = useLoaderData();
+  const navigate=useNavigate();
   // Extract unique regions
   const uniqueRegions = [...new Set(serviceCenters.map((w) => w.region))];
   // Get districts by region
@@ -93,7 +94,6 @@ const SendParcel = () => {
         axiosSecure.post("/parcels", parcelData).then((res) => {
           console.log(res.data);
           if (res.data.insertedId) {
-            // TODO: redirect to a payment page
             Swal.fire({
               title: "Redirecting...",
               text: "Proceeding to payment gateway.",
@@ -101,6 +101,7 @@ const SendParcel = () => {
               timer: 1500,
               showConfirmButton: false,
             });
+            navigate(`/dashboard/payment/${res.data.insertedId}`);
             reset(); // Reset form after successful submission
           } else {
             Swal.fire({
