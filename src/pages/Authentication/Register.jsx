@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import useAuth from "../../hooks/useAuth";
 import Swal from "sweetalert2";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
 
 const Register = () => {
   const {
@@ -15,8 +16,11 @@ const Register = () => {
   const { createUser, setUser, logInWithGoogle, updateUser } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [profilePic, setProfilePic] = useState("");
+  const [imageUploading, setImageUploading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
   const onSubmit = (data) => {
     console.log(data);
     // Handle registration logic here
@@ -25,12 +29,12 @@ const Register = () => {
       .then((result) => {
         const user = result.user;
         console.log(user);
-        updateUser({ displayName: data.name, photoURL: data.photo[0] })
+        updateUser({ displayName: data.name, photoURL: profilePic })
           .then(() => {
             setUser({
               ...user,
               displayName: data.name,
-              photoURL: data.photo[0],
+              photoURL: profilePic,
             });
             navigate(location.state || "/");
             Swal.fire({
@@ -63,6 +67,37 @@ const Register = () => {
         });
       });
   };
+  
+  const handleImageUpload = async (e) => {
+    const image = e.target.files[0];
+    if (!image) return;
+
+    setImageUploading(true);
+    // console.log(image)
+
+    const formData = new FormData();
+    formData.append("image", image);
+
+    try {
+      const imagUploadUrl = `https://api.imgbb.com/1/upload?key=${
+        import.meta.env.VITE_image_upload_key
+      }`;
+      const res = await axios.post(imagUploadUrl, formData);
+
+      setProfilePic(res.data.data.url);
+      //console.log(res.data.data.url);
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Image upload failed",
+        text: "Please try again with a different image.",
+      });
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
   const handleGoogleSignIn = () => {
     logInWithGoogle()
       .then((result) => {
@@ -88,18 +123,62 @@ const Register = () => {
         <h1 className="text-3xl font-bold ms-5">Create an Account</h1>
         <p className="ms-5">Register with Profast</p>
         <div className="card-body">
-             {errorMessage && (
+          {errorMessage && (
             <p className="text-red-500 text-center">{errorMessage}</p>
           )}
           <form className="fieldset" onSubmit={handleSubmit(onSubmit)}>
             {/* photo url */}
             <label className="label text-lg">Photo</label>
-            <input
-              type="file"
-              {...register("photo")}
-              accept="image/*"
-              className="file-input file-input-ghost"
-            />
+            <div className="flex items-center space-x-4">
+              <input
+                type="file"
+                onChange={handleImageUpload}
+                className="file-input file-input-ghost flex-1"
+                accept="image/*"
+                disabled={imageUploading}
+              />
+              {imageUploading ? (
+                <div className="w-16 h-16 rounded-full border-2 border-primary flex items-center justify-center bg-gray-100">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : profilePic ? (
+                <div className="avatar">
+                  <div className="w-16 h-16 rounded-full border-2 border-primary">
+                    <img
+                      src={profilePic}
+                      alt="Profile Preview"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full border-2 border-gray-300 border-dashed flex items-center justify-center bg-gray-50">
+                  <svg
+                    className="w-8 h-8 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            {imageUploading && (
+              <p className="text-sm text-blue-600 mt-1">
+                📤 Uploading image...
+              </p>
+            )}
+            {profilePic && !imageUploading && (
+              <p className="text-sm text-green-600 mt-1">
+                ✓ Photo uploaded successfully!
+              </p>
+            )}
 
             {/* name */}
             <label className="label text-lg">Name</label>
@@ -155,7 +234,7 @@ const Register = () => {
             </button>
             <div className="mt-4 text-center text-lg">
               <p>
-               Already have an account?{" "}
+                Already have an account?{" "}
                 <span>
                   <Link to="/login" className="text-primary">
                     Login
@@ -165,7 +244,7 @@ const Register = () => {
             </div>
             <div className="divider text-lg">OR</div>
             <button
-               onClick={handleGoogleSignIn}
+              onClick={handleGoogleSignIn}
               className="btn bg-white text-black border-[#e5e5e5]"
             >
               <svg
