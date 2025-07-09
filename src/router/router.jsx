@@ -16,6 +16,8 @@ import BeARider from "../pages/BeARider/BeARider";
 import PendingRiders from "../Dashboard/PendingRiders";
 import ActiveRiders from "../Dashboard/ActiveRiders";
 import MakeAdmin from "../Dashboard/MakeAdmin";
+import Forbidden from "../pages/forbidden-page/Forbidden";
+import AdminRoute from "../routes/AdminRoute";
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +54,10 @@ export const router = createBrowserRouter([
             <BeARider />
           </PrivateRoute>
         ),
+      },
+      {
+        path: "forbidden",
+        element: <Forbidden />,
       },
     ],
   },
@@ -90,17 +96,29 @@ export const router = createBrowserRouter([
         element: <PaymentHistory />,
       },
       {
-        path:"pending-riders",
-        element:<PendingRiders/>,
+        path: "pending-riders",
+        element: (
+          <AdminRoute>
+            <PendingRiders />
+          </AdminRoute>
+        ),
       },
       {
-        path:"active-riders",
-        element:<ActiveRiders/>,
+        path: "active-riders",
+        element: (
+          <AdminRoute>
+            <ActiveRiders />
+          </AdminRoute>
+        ),
       },
       {
-        path:"make-admin",
-        element:<MakeAdmin/>,
-      }
+        path: "make-admin",
+        element: (
+          <AdminRoute>
+            <MakeAdmin />
+          </AdminRoute>
+        ),
+      },
     ],
   },
 ]);

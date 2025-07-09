@@ -9,8 +9,10 @@ import {
   FaUserClock,
   FaUserShield,
 } from "react-icons/fa";
+import useUserRole from "../hooks/useUserRole";
 
 const DashboardLayout = () => {
+  const { isAdmin, roleLoading } = useUserRole();
   return (
     <div className="drawer lg:drawer-open">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
@@ -78,33 +80,38 @@ const DashboardLayout = () => {
               Payment History
             </NavLink>
           </li>
-          {/* riders link */}
-          <li>
-            <NavLink
-              to="/dashboard/active-riders"
-              className={({ isActive }) => (isActive ? " underline " : "")}
-            >
-              <FaUserCheck className="inline-block mr-2" />
-              Active Riders
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/dashboard/pending-riders"
-              className={({ isActive }) => (isActive ? " underline " : "")}
-            >
-              <FaUserClock className="inline-block mr-2" />
-              Pending Riders
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/dashboard/make-admin"
-              className={({ isActive }) => (isActive ? " underline " : "")}
-            >
-              <FaUserShield className="inline-block mr-2" />
-              Make Admin
-            </NavLink>
-          </li>
+          {/* Admin link */}
+          {isAdmin && !roleLoading && (
+            <>
+              <li>
+                <NavLink
+                  to="/dashboard/active-riders"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                  <FaUserCheck className="inline-block mr-2" />
+                  Active Riders
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/dashboard/pending-riders"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                  <FaUserClock className="inline-block mr-2" />
+                  Pending Riders
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/dashboard/make-admin"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                  <FaUserShield className="inline-block mr-2" />
+                  Make Admin
+                </NavLink>
+              </li>
+            </>
+          )}
         </ul>
       </div>
     </div>
