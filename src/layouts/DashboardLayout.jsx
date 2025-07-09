@@ -1,7 +1,13 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router";
 import Logo from "../logo/logo";
-import { FaBoxOpen, FaHome, FaMoneyCheckAlt } from "react-icons/fa";
+import {
+  FaBoxOpen,
+  FaHome,
+  FaMoneyCheckAlt,
+  FaUserCheck,
+  FaUserClock,
+} from "react-icons/fa";
 
 const DashboardLayout = () => {
   return (
@@ -56,9 +62,7 @@ const DashboardLayout = () => {
           <li>
             <NavLink
               to="/dashboard/myParcels"
-              className={({ isActive }) =>
-                isActive ? " underline " : ""
-              }
+              className={({ isActive }) => (isActive ? " underline " : "")}
             >
               <FaBoxOpen className="inline-block mr-2" />
               My Parcels
@@ -67,12 +71,29 @@ const DashboardLayout = () => {
           <li>
             <NavLink
               to="/dashboard/paymentHistory"
-              className={({ isActive }) =>
-                isActive ? " underline " : ""
-              }
+              className={({ isActive }) => (isActive ? " underline " : "")}
             >
-               <FaMoneyCheckAlt className="inline-block mr-2" />
+              <FaMoneyCheckAlt className="inline-block mr-2" />
               Payment History
+            </NavLink>
+          </li>
+          {/* riders link */}
+          <li>
+            <NavLink
+              to="/dashboard/active-riders"
+              className={({ isActive }) => (isActive ? " underline " : "")}
+            >
+              <FaUserCheck className="inline-block mr-2" />
+              Active Riders
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/dashboard/pending-riders"
+              className={({ isActive }) => (isActive ? " underline " : "")}
+            >
+              <FaUserClock className="inline-block mr-2" />
+              Pending Riders
             </NavLink>
           </li>
         </ul>
