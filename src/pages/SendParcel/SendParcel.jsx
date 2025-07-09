@@ -5,6 +5,7 @@ import { useLoaderData, useNavigate } from "react-router";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
 import useAuth from "../../hooks/useAuth";
 import { calculateDeliveryCost } from "../../utils/calculateCost";
+import useTrackingLogger from "../../hooks/useTrackingLogger";
 
 const generateTrackingID = () => {
   const date = new Date();
@@ -24,7 +25,9 @@ const SendParcel = () => {
   const { user } = useAuth();
   const axiosSecure = useAxiosSecure();
   const serviceCenters = useLoaderData();
-  const navigate=useNavigate();
+  const navigate = useNavigate();
+  const { logTracking } = useTrackingLogger();
+
   // Extract unique regions
   const uniqueRegions = [...new Set(serviceCenters.map((w) => w.region))];
   // Get districts by region
@@ -79,6 +82,7 @@ const SendParcel = () => {
       },
     }).then((result) => {
       if (result.isConfirmed) {
+        const tracking_id = generateTrackingID();
         const parcelData = {
           ...data,
           cost: totalCost,
@@ -86,12 +90,12 @@ const SendParcel = () => {
           payment_status: "unpaid",
           delivery_status: "not_collected",
           creation_date: new Date().toISOString(),
-          tracking_id: generateTrackingID(),
+          tracking_id: tracking_id,
         };
 
         //console.log("Ready for payment:", parcelData);
 
-        axiosSecure.post("/parcels", parcelData).then((res) => {
+        axiosSecure.post("/parcels", parcelData).then(async (res) => {
           console.log(res.data);
           if (res.data.insertedId) {
             Swal.fire({
@@ -101,6 +105,14 @@ const SendParcel = () => {
               timer: 1500,
               showConfirmButton: false,
             });
+            // Log the tracking event
+            await logTracking({
+              tracking_id: parcelData.tracking_id,
+              status: "parcel_created",
+              details: `Created by ${user.displayName}`,
+              updated_by: user.email,
+            });
+
             navigate(`/dashboard/payment/${res.data.insertedId}`);
             reset(); // Reset form after successful submission
           } else {

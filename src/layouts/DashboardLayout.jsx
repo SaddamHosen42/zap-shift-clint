@@ -7,9 +7,11 @@ import {
   FaHome,
   FaMoneyCheckAlt,
   FaMotorcycle,
+  FaSearchLocation,
   FaTasks,
   FaUserCheck,
   FaUserClock,
+  FaUserEdit,
   FaUserShield,
   FaWallet,
 } from "react-icons/fa";
@@ -84,6 +86,25 @@ const DashboardLayout = () => {
               Payment History
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/dashboard/track"
+              className={({ isActive }) => (isActive ? " underline " : "")}
+            >
+              <FaSearchLocation className="inline-block mr-2" />
+              Track a Package
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/dashboard/profile"
+              className={({ isActive }) => (isActive ? " underline " : "")}
+            >
+              <FaUserEdit className="inline-block mr-2" />
+              Update Profile
+            </NavLink>
+          </li>
+
           {/* Rider link */}
           {isRider && !roleLoading && (
             <>
