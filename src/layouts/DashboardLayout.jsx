@@ -7,6 +7,7 @@ import {
   FaMoneyCheckAlt,
   FaUserCheck,
   FaUserClock,
+  FaUserShield,
 } from "react-icons/fa";
 
 const DashboardLayout = () => {
@@ -94,6 +95,14 @@ const DashboardLayout = () => {
             >
               <FaUserClock className="inline-block mr-2" />
               Pending Riders
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/dashboard/make-admin"
+              className={({ isActive }) => (isActive ? " underline " : "")}
+            >
+              <FaUserShield className="inline-block mr-2" />
+              Make Admin
             </NavLink>
           </li>
         </ul>

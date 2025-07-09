@@ -15,6 +15,7 @@ import PaymentHistory from "../Dashboard/PaymentHistory";
 import BeARider from "../pages/BeARider/BeARider";
 import PendingRiders from "../Dashboard/PendingRiders";
 import ActiveRiders from "../Dashboard/ActiveRiders";
+import MakeAdmin from "../Dashboard/MakeAdmin";
 
 export const router = createBrowserRouter([
   {
@@ -95,6 +96,10 @@ export const router = createBrowserRouter([
       {
         path:"active-riders",
         element:<ActiveRiders/>,
+      },
+      {
+        path:"make-admin",
+        element:<MakeAdmin/>,
       }
     ],
   },
