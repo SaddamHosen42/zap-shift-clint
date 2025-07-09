@@ -5,6 +5,7 @@ import {
   FaBoxOpen,
   FaHome,
   FaMoneyCheckAlt,
+  FaMotorcycle,
   FaUserCheck,
   FaUserClock,
   FaUserShield,
@@ -108,6 +109,14 @@ const DashboardLayout = () => {
                 >
                   <FaUserShield className="inline-block mr-2" />
                   Make Admin
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/dashboard/assign-rider"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                   <FaMotorcycle className="inline-block mr-2" />
+                   Assign Rider
                 </NavLink>
               </li>
             </>
