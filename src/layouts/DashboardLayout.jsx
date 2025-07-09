@@ -3,17 +3,20 @@ import { NavLink, Outlet } from "react-router";
 import Logo from "../logo/logo";
 import {
   FaBoxOpen,
+  FaCheckCircle,
   FaHome,
   FaMoneyCheckAlt,
   FaMotorcycle,
+  FaTasks,
   FaUserCheck,
   FaUserClock,
   FaUserShield,
+  FaWallet,
 } from "react-icons/fa";
 import useUserRole from "../hooks/useUserRole";
 
 const DashboardLayout = () => {
-  const { isAdmin, roleLoading } = useUserRole();
+  const { isAdmin, roleLoading, isRider } = useUserRole();
   return (
     <div className="drawer lg:drawer-open">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
@@ -81,6 +84,39 @@ const DashboardLayout = () => {
               Payment History
             </NavLink>
           </li>
+          {/* Rider link */}
+          {isRider && !roleLoading && (
+            <>
+              <li>
+                <NavLink
+                  to="/dashboard/pending-deliveries"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                  <FaTasks className="inline-block mr-2" />
+                  Pending Deliveries
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/dashboard/completed-deliveries"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                  <FaCheckCircle className="inline-block mr-2" />
+                  Completed Deliveries
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/dashboard/my-earnings"
+                  className={({ isActive }) => (isActive ? " underline " : "")}
+                >
+                  <FaWallet className="inline-block mr-2" />
+                  My Earnings
+                </NavLink>
+              </li>
+            </>
+          )}
+
           {/* Admin link */}
           {isAdmin && !roleLoading && (
             <>
@@ -112,11 +148,12 @@ const DashboardLayout = () => {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/dashboard/assign-rider"
+                <NavLink
+                  to="/dashboard/assign-rider"
                   className={({ isActive }) => (isActive ? " underline " : "")}
                 >
-                   <FaMotorcycle className="inline-block mr-2" />
-                   Assign Rider
+                  <FaMotorcycle className="inline-block mr-2" />
+                  Assign Rider
                 </NavLink>
               </li>
             </>

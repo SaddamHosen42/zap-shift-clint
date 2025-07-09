@@ -150,7 +150,7 @@ const MakeAdmin = () => {
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {u.role === "admin" ? "Admin" : "User"}
+                          {u.role}
                         </span>
                       </td>
                       <td className="px-6 py-4">
