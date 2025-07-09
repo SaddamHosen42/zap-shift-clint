@@ -12,6 +12,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import MyParcels from "../Dashboard/MyParcels";
 import Payment from "../Dashboard/payment/Payment";
 import PaymentHistory from "../Dashboard/PaymentHistory";
+import BeARider from "../pages/BeARider/BeARider";
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +41,15 @@ export const router = createBrowserRouter([
           </PrivateRoute>
         ),
       },
+      {
+        path: "beARider",
+        loader: () => fetch("./warehouses.json"),
+        element: (
+          <PrivateRoute>
+            <BeARider />
+          </PrivateRoute>
+        ),
+      },
     ],
   },
   {
@@ -57,24 +67,25 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path:"dashboard",
-    element:<PrivateRoute>
-      <DashboardLayout />
-    </PrivateRoute>,
+    path: "dashboard",
+    element: (
+      <PrivateRoute>
+        <DashboardLayout />
+      </PrivateRoute>
+    ),
     children: [
       {
         path: "myParcels",
-        element:<MyParcels />,
+        element: <MyParcels />,
       },
       {
-        path:"payment/:parcelId",
-        element:<Payment/>
+        path: "payment/:parcelId",
+        element: <Payment />,
       },
       {
         path: "paymentHistory",
-        element:<PaymentHistory />,
-      }
-    ]
-
-  }
+        element: <PaymentHistory />,
+      },
+    ],
+  },
 ]);

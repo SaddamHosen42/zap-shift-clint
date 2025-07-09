@@ -5,6 +5,7 @@ import useAuth from "../../hooks/useAuth";
 import Swal from "sweetalert2";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
+import useAxios from "../../hooks/useAxios";
 
 const Register = () => {
   const {
@@ -20,15 +21,27 @@ const Register = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const axiosInstance = useAxios();
 
   const onSubmit = (data) => {
     console.log(data);
     // Handle registration logic here
 
     createUser(data.email, data.password)
-      .then((result) => {
+      .then(async (result) => {
         const user = result.user;
         console.log(user);
+        // update userinfo in the database
+        const userInfo = {
+          email: data.email,
+          role: "user", // default role
+          created_at: new Date().toISOString(),
+          last_log_in: new Date().toISOString(),
+        };
+        const userRes = await axiosInstance.post("/users", userInfo);
+        console.log(userRes.data);
+
+        //update user in firebase
         updateUser({ displayName: data.name, photoURL: profilePic })
           .then(() => {
             setUser({
@@ -67,7 +80,7 @@ const Register = () => {
         });
       });
   };
-  
+
   const handleImageUpload = async (e) => {
     const image = e.target.files[0];
     if (!image) return;
@@ -100,8 +113,17 @@ const Register = () => {
 
   const handleGoogleSignIn = () => {
     logInWithGoogle()
-      .then((result) => {
+      .then(async (result) => {
         const user = result.user;
+        //save user data to database
+        const userInfo = {
+          email: user.email,
+          role: "user", // default role
+          created_at: new Date().toISOString(),
+          last_log_in: new Date().toISOString(),
+        };
+        const userRes = await axiosInstance.post("/users", userInfo);
+        console.log(userRes.data);
         navigate(location.state || "/");
         Swal.fire({
           icon: "success",

@@ -4,20 +4,22 @@ import { Link, useLocation, useNavigate } from "react-router";
 import Swal from "sweetalert2";
 import useAuth from "../../hooks/useAuth";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import useAxios from "../../hooks/useAxios";
 
 const Login = () => {
   const {
     register,
     handleSubmit,
     reset,
-
     formState: { errors },
   } = useForm();
+  const axiosInstance=useAxios();
   const { logIn, logInWithGoogle } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
   const onSubmit = (data) => {
     console.log(data);
     // Handle login logic here
@@ -49,8 +51,17 @@ const Login = () => {
   };
   const handleGoogleSignIn = () => {
     logInWithGoogle()
-      .then((result) => {
+      .then(async(result) => {
         const user = result.user;
+                //save user data to database
+        const userInfo = {
+          email: user.email,
+          role: "user", // default role
+          created_at: new Date().toISOString(),
+          last_log_in: new Date().toISOString(),
+        };
+        const userRes = await axiosInstance.post("/users", userInfo);
+        console.log(userRes.data);
         navigate(location.state || "/");
         Swal.fire({
           icon: "success",
