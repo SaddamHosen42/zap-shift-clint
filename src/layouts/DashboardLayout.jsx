@@ -24,7 +24,7 @@ import Swal from "sweetalert2";
 
 const DashboardLayout = () => {
   const { isAdmin, roleLoading, isRider } = useUserRole();
-   const { user, logOut } = useAuth();
+  const { user, logOut } = useAuth();
 
   const handleLogOut = () => {
     Swal.fire({
